@@ -1,273 +1,337 @@
-﻿// Gabriel Contreras
-// Applied Activity 4- TODO List Manager
-/* The program let the user to input tasks, marked them completed
- * delete them and view tasks not completed
- */
+﻿using System;
+using System.IO;
 
-using System.Diagnostics.CodeAnalysis;
-
-namespace TODO_List_Manager
+namespace Lost_Treasure_Game
 {
-    internal class Program
+    internal class Adventure
     {
-        static string[] todoList = new string[10];
-        static int taskCounter = 0;
+        // Principal variables
+        static string playerName;
+        static int playerHealth = 100;
+        static bool hasKey = false;
+        static bool hasTorch = false;
+        static string[] inventory = new string[3];
+        static int itemCount = 0;
+        static bool treasureFound = false;
         static void Main(string[] args)
         {
-            int choice = 0;  // User menu selection
+            bool playAgain = true;
 
-            while (choice != 10)     // Run program until exit
+            // Loops the game till user wants
+            while (playAgain)
             {
                 Console.Clear();
-                DisplayMenu();
+                playerHealth = 100;
+                hasKey = false;
+                hasTorch = false;
+                treasureFound = false;
+                itemCount = 0;
+
+                // Clear inventory when playing again
+                for (int i = 0; i < inventory.Length; i++)
+                {
+                    inventory[i] = null;
+                }
+
+                StartGame();
+                Scene1_Beach();
+
+                Console.WriteLine("Want to play again? (yes/no)");
+                string answer = Console.ReadLine().ToLower();
+                playAgain = (answer == "yes" || answer == "y");
+            }
+            Console.WriteLine("Thanks for playing The Lost Treasure Game!");
+        }
+        // Shows player info and stats
+        static void DisplayStauts()
+        {
+            Console.WriteLine("-----------------------");
+            Console.WriteLine("Player: " + playerName);
+            Console.WriteLine("Health: " + playerHealth);
+            Console.WriteLine("Inventory:");
+
+            for (int i = 0; i < inventory.Length; i++)
+            {
+                if (inventory[i] != null)
+                {
+                    Console.WriteLine("- " + inventory[i]);
+                }
+            }
+            Console.WriteLine("------------------------");
+        }
+        // Displays welcome message and instructions
+        static void StartGame()
+        {
+            Console.WriteLine("Welcome to the Lost Treasure Game!");
+            Console.Write("Enter your name: ");
+            playerName = Console.ReadLine();
+
+            Console.WriteLine($"\nHello {playerName}! Explore the island, find the treasure and survive!");
+            Console.WriteLine("You can only carry 3 items. Choose wisely.\n");
+        }
+        // Creates a file with the status
+        static void LogStatus()
+        {
+            string fileName = $"{playerName}.csv";
             
+            // Prepare inventory for file
+            string item1 = inventory[0] ?? "NA";
+            string item2 = inventory[1] ?? "NA";
+            string item3 = inventory[2] ?? "NA";
 
-            while (!int.TryParse(Console.ReadLine(), out choice) || choice < 1 || choice > 10)   // Menu input validation
-            {
-                Console.WriteLine("Invalid Option. Try again.");
-            }
+            string line =
+                $"{playerHealth},{hasKey},{hasTorch},{treasureFound},{itemCount},{item1},{item2},{item3}";
 
-            switch (choice) // Control every input selection
-            {
-                case 1: AddTask(); break;
-                case 2: ViewAllTasks(); break;
-                case 3: MarkTaskComplete(); break;
-                case 4: DeleteTask(); break;
-                case 5: ViewIncompleteTask(); break;
-                case 6: CLearAllTasks(); break;
-                case 7: ShowStats(); break;
-                case 8: ExportToFile(); break;
-                case 9: ImportFromFile(); break;
-                case 10: Console.WriteLine("Thank you for using the program!"); break;
-            }
+            File.AppendAllText(fileName, line + Environment.NewLine);
 
-            if (choice != 10) //Pause screen before returning to menu
-            {
-                Console.WriteLine("Press ENTER to continue.");
-                Console.ReadLine();
-            }
+            Console.WriteLine($"\nStatus logged to file: {fileName}");
         }
-
-        }
-        // Shows the user the menu
-        static void DisplayMenu()
+        // Function that is called every time an item is added
+        static void AddItem(string itemName)
         {
-            Console.WriteLine("====== TODO List Manager ======");
-            Console.WriteLine("1. Add a task");
-            Console.WriteLine("2. View all tasks");
-            Console.WriteLine("3. Mark task as complete");
-            Console.WriteLine("4. Delete a task");
-            Console.WriteLine("5. View incomplete tasks only");
-            Console.WriteLine("6. Clear all tasks");
-            Console.WriteLine("7. Show task stats");
-            Console.WriteLine("8. Import ToDo list to a file");
-            Console.WriteLine("9. Import ToDo list from a file");
-            Console.WriteLine("10. Exit");
-            Console.Write("Enter your choice: ");
-            
-        }
-
-        // When Option 1 is selected allows the user to input a task if there is space in the array
-        static void AddTask()
-        {
-            if (taskCounter >= 10) // Array max capacity
+            if (itemCount < 3)
             {
-                Console.WriteLine("Task list is full!");
-                return;
-            }
-
-            Console.Write("Enter new task: ");
-            string task = Console.ReadLine();
-
-            while (task == "")  //Prevents empty tasks
-            {
-                Console.Write("Task can not be empty. Try again.");
-                task = Console.ReadLine();
-            }
-
-            todoList[taskCounter] = task; // add task to the array
-            taskCounter++; // Increase number of tasks
-
-            Console.WriteLine("Task added succesfully");
-
-        }
-        // When option 2 is selected displays all tasks added at the moment
-        static void ViewAllTasks()
-        {
-            if (taskCounter == 0) // No task added yet
-            {
-                Console.WriteLine("No tasks added yet");
-                return;
-            }
-
-            for (int i = 0; i < taskCounter; i++)
-            {
-                Console.WriteLine($"{i + 1}. {todoList[i]}");
-            }
-
-
-        }
-        // When option 3 is selected allows user to mark a task done by adding "[DONE] before the task"
-        static void MarkTaskComplete()
-        {
-            if (taskCounter == 0)           // Check if there are tasks
-            {
-                Console.WriteLine("There are no tasks to complete.");
-                return;
-            }
-
-            ViewAllTasks(); // Shows tasks before choosing
-            Console.Write("Enter task number to mark complete: ");
-
-            int num;
-            while (!int.TryParse(Console.ReadLine(), out num) || num < 1 || num > taskCounter) // validate user input
-            {
-                Console.WriteLine("Invalid task number. Try again.");
-            }
-
-            int index = num - 1;
-
-            if (todoList[index].Contains("[DONE]"))  // Verify if the task hasn't been marked before
-            {
-                Console.WriteLine("Task is already marked completed");
+                inventory[itemCount] = itemName;
+                itemCount++;
+                Console.WriteLine(itemName + " added to your inventory!");
             }
             else
             {
-                todoList[index] = "[DONE] " + todoList[index]; // Add "[DONE]"
-                Console.WriteLine("Task marked completed.");
+                Console.WriteLine("Your inventory is full! You cannot take the: " + itemName);
             }
         }
-        // When option 4 is selected Allows user to delete and shift the tasks
-        static void DeleteTask()
+        // Scene when user starts playing and has to make a decision
+        static void Scene1_Beach()
         {
-            if (taskCounter == 0)       // Check if there are tasks to delete
+            Console.Clear();
+            Console.WriteLine("You wake up on a beach in a mysteroius island.");
+            DisplayStauts();
+
+            int choice = 0;
+
+            while (choice != 1 && choice != 2)
             {
-                Console.WriteLine("There are no tasks to delete.");
-                return;
-            }
+                Console.WriteLine("1) Explore the jungle");
+                Console.WriteLine("2) Search the beach");
+                Console.WriteLine("3) Log Status");
+                Console.Write("Choose: ");
 
-            ViewAllTasks();
-            Console.Write("Enter task number to delete: ");
+                int.TryParse(Console.ReadLine(), out choice);
 
-            int num;
-            while (!int.TryParse(Console.ReadLine(), out num) || num < 1 || num > taskCounter) // Verify user input
-            {
-                Console.WriteLine("Invalid task number. Try again.");
-            }
-
-            int index = num - 1;
-
-            for (int i = index; i < taskCounter - 1; i++)
-            {
-                todoList[i] = todoList[i + 1];  // Shift items 
-            }
-            
-            taskCounter--;  // Reduce number of tasks
-            Console.WriteLine("Task was deleted succesfully.");
-        }
-        // when option 5 is selected shows the tasks that aren't marked completed
-        static void ViewIncompleteTask()
-        {
-            if (taskCounter == 0)       // Check if there are tasks added
-            {
-                Console.WriteLine("No tasks added yet");
-                return;
-            }
-
-            int count = 0;  // Count incomplete tasks
-
-            for (int i = 0; i < taskCounter; i++)
-            {
-                if (!todoList[i].Contains("[DONE] "))  // Task is incomplete
+                if (choice == 3)
                 {
-                    Console.WriteLine($"{i + 1}. {todoList[i]}");
-                    count++;
-                }
-
-            }   
-                if (count == 0)  // Every task is complete
-                {
-                    Console.WriteLine("All tasks completed! Great job!");
-                }
-        }
-        // When option 6 is selected
-        static void CLearAllTasks()
-        {
-            if (taskCounter == 0) // No task added yet
-            {
-                Console.WriteLine("No tasks added yet");
-                return;
-            }
-
-            taskCounter = 0;
-            Console.WriteLine("All task Cleared!");
-        }
-        // When option 7 is selected
-        static void ShowStats()
-        {
-            if (taskCounter == 0)       // Check if there are tasks added
-            {
-                Console.WriteLine("No tasks added yet");
-                return;
-            }
-
-            int done = 0, notDone = 0; // Counter of the done and not done tasks
-
-            for (int i = 0; i < taskCounter; i++)
-            {
-                if (todoList[i].Contains("[DONE]")) // If tasks has done means it is completed
-                    done++;
-                else
-                    notDone++;
-            }
-
-            Console.WriteLine($"Completed: {done}");
-            Console.WriteLine($"Incomplete: {notDone}");
-        }
-        // When option 8 is selected
-        static void ExportToFile()
-        {
-            string fileName = "todo_export.txt";
-
-            using (StreamWriter writer = new StreamWriter(fileName))
-            {
-                for (int i = 0; i < taskCounter;i++)
-                {
-                    writer.WriteLine(todoList[i]);
+                    LogStatus();
+                    choice = 0;
                 }
             }
-            Console.WriteLine($"\nTasks exported succesfully to {fileName}");
+
+            if (choice == 1)
+                Scene2_Jungle();
+            else
+                Scene2_BearchSearch();
         }
-        // When Option 9 is selected
-        static void ImportFromFile()
+        // Scene where the user gets a sword and have to make a choice 
+        static void Scene2_Jungle()
         {
-            string fileName = "todo_export.txt";
-
-            if (!File.Exists(fileName))
+            Console.Clear();
+            Console.WriteLine("\nYou enter the jungle. A wild animal suddenly attacks you! ");
+            // When coming back from other place check if user already has a sword
+            if (Array.Exists(inventory, item => item == "Sword"))
             {
-                Console.WriteLine("No export file found. Please export first or check the file name.");
+                playerHealth -= 40;
+            }
+            else
+            {
+                Console.WriteLine("\nYou entered the jungle. A wild animal suddenly attacks you! ");
+
+                playerHealth -= 50;
+                Console.WriteLine("You escaped the wild animal but you lost 20 health while trying!");
+                Console.WriteLine(".......");
+                Console.WriteLine("You found something in the floor");
+                Console.WriteLine("It is a sword!! It will help you to reduce 20% damage from further attacks.");
+
+                AddItem("Sword");
+            }
+            DisplayStauts();
+
+
+            if (playerHealth <= 0)
+            {
+                Endgame("Lose");
                 return;
             }
 
-            string[] lines = File.ReadAllLines(fileName);
+            int choice = 0;
 
-            if (lines.Length > 10)
+            while (choice != 1 && choice != 2)
             {
-                Console.WriteLine("File has more tasks than available space (10). Import cancelled.");
-                return;
-            }
+                Console.WriteLine("1) Go to the village.");
+                Console.WriteLine("2) Look around for items.");
+                Console.WriteLine("3) Log Status");
+                Console.Write("Choose: ");
 
-            taskCounter = 0;  // Resets the list before importing
+                int.TryParse(Console.ReadLine(), out choice);
 
-            foreach (string line in lines)
-            {
-                if (!string.IsNullOrWhiteSpace(line))
+                if (choice == 3)
                 {
-                    todoList[taskCounter] = line;
-                    taskCounter++;
+                    LogStatus();
+                    choice = 0;
                 }
             }
-            Console.WriteLine("Tasks imported succesfully.");
+
+            if (choice == 1)
+                Scene3_Village();
+            else
+            {
+                // Check if user already has torch in the inventory
+                if (!hasTorch)
+                {
+                    Console.WriteLine("You found a torch on the ground");
+                    AddItem("Torch");
+                    hasTorch = true;
+                }
+                Scene3_Village();
+            }
+        }
+        // Scene where the usser founds a bow in the beach and goes to the cave
+        static void Scene2_BearchSearch()
+        {
+            Console.Clear();
+            Console.WriteLine("\nYou found a bow stuck in the sand.");
+            AddItem("Bow");
+
+            DisplayStauts();
+
+            int choice = 0;
+            while (choice != 1)
+            {
+                Console.WriteLine("1) Continue to the dark cave");
+                Console.WriteLine("2) Log Status");
+                Console.Write("Choose: ");
+
+                int.TryParse(Console.ReadLine(), out choice);
+
+                if (choice == 2)
+                {
+                    LogStatus();
+                    choice = 0;
+                }
+            }
+           
+            Scene3_Cave();
+        }
+        // Scene where user gets in to a cave with 2 possible outcomes depending if has torch
+        static void Scene3_Cave()
+        {
+            Console.Clear();
+            Console.WriteLine("\nYou arrived at a dark cave.");
+
+            if (!hasTorch)
+            {
+                Console.WriteLine("You entered without a torch... it's to darrkkk!!");
+                Console.WriteLine("You fall into the void and get trap");
+                playerHealth = 0;
+                Endgame("Trap");
+                return;
+            }
+
+            Console.WriteLine("Your torch lights up the path safely.");
+            Console.WriteLine("Walking in the path you founded a mysterious key!");
+
+            hasKey = true;
+            AddItem("Key");
+            DisplayStauts();
+
+            int choice = 0;
+            while (choice != 1)
+            {
+                Console.WriteLine("1) Continue deeper into the dark cave");
+                Console.WriteLine("2) Log Status");
+                Console.Write("Choose: ");
+
+                int.TryParse(Console.ReadLine(), out choice);
+
+                if (choice == 2)
+                {
+                    LogStatus();
+                    choice = 0;
+                }
+            }
+
+            Scene4_Treasure();
+        }
+        // Scene where player gets to village to get heal
+        static void Scene3_Village()
+        {
+            Console.Clear();
+            Console.WriteLine("You arrive to a small village.");
+            Console.WriteLine("A villager heals you +20 health.");
+            playerHealth += 20;
+
+            if (playerHealth > 100) playerHealth = 100;
+            DisplayStauts();
+
+            int choice = 0;
+            while (choice != 1 && choice != 2)
+            {
+                Console.WriteLine("1) Go to the Cave.");
+                Console.WriteLine("2) Return to the jungle.");
+                Console.WriteLine("3) Log Status");
+                Console.Write("Choose: ");
+
+                int.TryParse(Console.ReadLine(), out choice);
+
+                if (choice == 3)
+                {
+                    LogStatus();
+                    choice = 0;
+                }
+            }
+
+            if (choice == 1)
+                Scene3_Cave();
+            else
+                Scene2_Jungle();
+        }
+        // Scene when treasure is found with or without key
+        static void Scene4_Treasure()
+        {
+            Console.Clear();
+            Console.WriteLine("\nYou discover the treasure chamber!!");
+            //Verify if player has the key to open chest
+            if (!hasKey)
+            {
+                Console.WriteLine("You try to open the chest without the key...");
+                Console.WriteLine("A trap activates!!");
+                Endgame("Trap");
+                return;
+            }
+
+            Console.WriteLine("You use the key and open the treasure chest!");
+            Endgame("Win");
+        }
+        // Contains every possible outcome of the game 
+        static void Endgame(string outcome)
+        {
+            Console.WriteLine("\n==============GAME OVER============");
+
+            if (outcome == "Win")
+                Console.WriteLine("Congratulations!! You found the treasure and survive the island!");
+            else if (outcome == "Trap")
+                Console.WriteLine("You fell in to void and got trapped.... You lose");
+            else
+                Console.WriteLine("Your health reached 0. You died");
+
+            // Show the REAL stats before resetting
+            DisplayStauts();
+
+            // Make final log of the game
+            Console.WriteLine("\n(Logging final stats...)");
+            LogStatus();
+
+            // Pause so player sees info BEFORE reset happens in Main loop
+            Console.WriteLine("\nPress Enter to continue...");
+            Console.ReadLine();
         }
     }
-}
+} 
